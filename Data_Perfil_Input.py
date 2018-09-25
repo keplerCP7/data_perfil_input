@@ -415,5 +415,5 @@ df_perfilinput.registerTempTable("perfilinput")
 # In[9]:
 
 
-df_perfilinput.repartition("codpais", "aniocampanaexposicion").write              .partitionBy("codpais", "aniocampanaexposicion").mode("Append")              .parquet("s3://hdata-belcorp/modelo-analitico-parquet/perfiles-input")
+df_perfilinput.repartition("codpais", "aniocampanaproceso").write              .partitionBy("codpais", "aniocampanaproceso").mode("Append")              .parquet("s3://hdata-belcorp/modelo-analitico-parquet/perfiles-input")
 

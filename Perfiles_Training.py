@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[20]:
+# In[22]:
 
 
 from pyspark import SparkContext
@@ -10,15 +10,15 @@ import pandas as pd
 from pyspark.ml.feature import VectorAssembler
 from pyspark.ml.clustering import KMeans
 
-#conf = SparkConf().setAppName("Data-Perfil-Input")
-#sc = SparkContext(conf=conf)
+conf = SparkConf().setAppName("Perfiles-Training")
+sc = SparkContext(conf=conf)
 sqlContext = SQLContext(sc)
 
-codpais = 'CL' # sys.argv[1] ## #'PE' 
-aniocampanaproceso = '201801' #sys.argv[2] ## #'201801'
+codpais = sys.argv[1] #'CO' # sys.argv[1] ## #'PE' 
+aniocampanaproceso = sys.argv[2] #'201710' #sys.argv[2] ## #'201801'
 
 
-# In[21]:
+# In[23]:
 
 
 df_data_set = sqlContext.read.parquet("s3://hdata-belcorp/modelo-analitico-parquet/perfiles-input/codpais=" + codpais + "/aniocampanaproceso=" + aniocampanaproceso + "/")
@@ -28,7 +28,7 @@ df_perfil_input = sqlContext.sql(" select '" + codpais + "' as codpais, '" + ani
 df_perfil_input.registerTempTable("perfilinput")
 
 
-# In[22]:
+# In[24]:
 
 
 df_data = df_perfil_input.toPandas()
@@ -84,7 +84,7 @@ df_data[['tercilpup']]=df_data[['tercilpup']].astype(float)
 df_data[['tercilppu']]=df_data[['tercilppu']].astype(float)
 
 
-# In[23]:
+# In[25]:
 
 
 data=df_data
@@ -107,7 +107,7 @@ data6 = (['ppu_lbel_cp','ppu_lbel_fg', 'ppu_lbel_mq', 'ppu_lbel_tc', 'ppu_lbel_t
 data6 = data[data6]
 
 
-# In[24]:
+# In[26]:
 
 
 sumdata1 = data1.sum(axis=1)
@@ -152,7 +152,7 @@ DataPerfil1 = pd.concat([data_1,data_2,data4_P,data_5],axis=1)
 DataPerfil1 = DataPerfil1.fillna(0)
 
 
-# In[25]:
+# In[27]:
 
 
 IQR = (DataPerfil1.quantile(.75)-DataPerfil1.quantile(0.25))
@@ -164,7 +164,7 @@ data_trat = DataPerfil1[(DataPerfil1 >= MIN1) &  (DataPerfil1 <= MAX1)]
 data_trat = pd.concat([data[(['codebelista'])],data_trat],axis=1)
 
 
-# In[29]:
+# In[28]:
 
 
 ## PREPARACION DE DATOS (POST MODELO).
@@ -191,7 +191,7 @@ DATA_NEW = Data_reasig[(['pup_lbel','pup_cyzone','pup_cp','pup_mq','pup_tc','ppu
 df_data = sqlContext.createDataFrame(DATA)
 
 
-# In[47]:
+# In[30]:
 
 
 #create output column features to pass ass parameter into th DF to kmeans
@@ -203,10 +203,11 @@ new_df = vecAssembler.transform(df_data)
 kmeans = KMeans(k=6, seed=10)  
 model = kmeans.fit(new_df.select('features'))
 
-transformed = model.transform(new_df)
+#transformed = model.transform(new_df)
 #transformed.show()
 
-model.write().overwrite().save("s3://hdata-belcorp/perfiles-pickles/")
+#save model: uploading model (parquet format) to S3
+model.write().overwrite().save("s3a://hdata-belcorp/perfiles-pickles/Modelo"+codpais+"/")
 
 
 # In[3]:
@@ -360,68 +361,4 @@ model.write().overwrite().save("s3://hdata-belcorp/perfiles-pickles/")
 #                         " (percentile_approx(ppu_tf, 0.25) - (1.5*(select ppu_tf from df_IQR))) as ppu_tf "                         
 #                         " from data_perfil ")
 #df_min1.registerTempTable("df_min1")
-
-
-# In[19]:
-
-
-
-
-
-# In[43]:
-
-
-
-
-#print(data_trat.shape, DataPerfil1.shape)
-data_trat.head(30)
-
-
-# In[45]:
-
-
-DataPerfil = pd.concat([data[(['codebelista'])],data_1,data_2,data4_P,data_5],axis=1)
-###
-DataPerfil1 = pd.concat([data_1,data_2,data4_P,data_5],axis=1)
-DataPerfil1 = DataPerfil1.fillna(0)
-
-
-# In[76]:
-
-
-#df2.show()
-df = df_data_perfil.approxQuantile(["pup_lbel", "pup_cyzone", "pup_cp"], [.75], 0)
-
-
-# In[75]:
-
-
-df[0]
-
-
-# In[77]:
-
-
-DataPerfil1.quantile(0.25)
-
-
-# In[48]:
-
-
-IQR = (DataPerfil1.quantile(.75)-DataPerfil1.quantile(0.25))
-IQR
-MAX1 =  DataPerfil1.quantile(.75) + 1.5*(IQR)
-MAX1 = MAX1.transpose()
-MIN1 = DataPerfil1.quantile(.25) -1.5*(IQR)
-MIN1 = MIN1.transpose()
-
-data_trat = DataPerfil1[(DataPerfil1 >= MIN1) &  (DataPerfil1 <= MAX1)]
-data_trat = pd.concat([data[(['codebelista'])],data_trat],axis=1)
-data_trat.head()
-
-
-# In[12]:
-
-
-df_data_perfil.count()
 

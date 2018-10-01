@@ -4,8 +4,8 @@
 # In[22]:
 
 
-from pyspark import SparkContext
-from pyspark import SQLContext
+from pyspark import SparkConf, SparkContext
+from pyspark.sql import SQLContext
 import pandas as pd
 from pyspark.ml.feature import VectorAssembler
 from pyspark.ml.clustering import KMeans

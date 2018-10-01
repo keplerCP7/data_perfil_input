@@ -208,7 +208,7 @@ model = kmeans.fit(new_df.select('features'))
 #transformed.show()
 
 #save model: uploading model (parquet format) to S3
-model.write().overwrite().save("s3a://hdata-belcorp/perfiles-pickles/Modelo"+codpais+"/")
+model.write().overwrite().save("s3://hdata-belcorp/perfiles-pickles/Modelo"+codpais+"/")
 
 
 # In[3]:

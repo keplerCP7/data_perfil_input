@@ -1,25 +1,28 @@
 
 # coding: utf-8
 
-# In[1]:
+# In[9]:
 
 
 import sys
+
 from pyspark import SparkConf, SparkContext
 from pyspark.sql import SQLContext
 import pandas as pd
+
 from pyspark.ml.feature import VectorAssembler
 from pyspark.ml.clustering import KMeansModel
 
-#conf = SparkConf().setAppName("Perfiles-Training")
-#sc = SparkContext(conf=conf)
+#comentar para correr en desarrollo
+conf = SparkConf().setAppName("Perfiles-Inference")
+sc = SparkContext(conf=conf)
 sqlContext = SQLContext(sc)
 
-codpais = 'PE' #'CO' # sys.argv[1] ## # 
-aniocampanaproceso = '201801' #'201710' #sys.argv[2] ## #
+codpais = sys.argv[1] #'PE' #'CO' # sys.argv[1] ## # 
+aniocampanaproceso = sys.argv[2] # '201801' #'201710' #sys.argv[2] ## #
 
 
-# In[2]:
+# In[10]:
 
 
 df_data_set = sqlContext.read.parquet("s3://hdata-belcorp/modelo-analitico-parquet/perfiles-input/codpais=" + codpais + "/aniocampanaproceso=" + aniocampanaproceso + "/")
@@ -29,7 +32,7 @@ df_perfil_input = sqlContext.sql(" select '" + codpais + "' as codpais, '" + ani
 df_perfil_input.registerTempTable("perfilinput")
 
 
-# In[3]:
+# In[11]:
 
 
 df_data = df_perfil_input.toPandas()
@@ -85,7 +88,7 @@ df_data[['tercilpup']]=df_data[['tercilpup']].astype(float)
 df_data[['tercilppu']]=df_data[['tercilppu']].astype(float)
 
 
-# In[4]:
+# In[12]:
 
 
 data=df_data
@@ -108,7 +111,7 @@ data6 = (['ppu_lbel_cp','ppu_lbel_fg', 'ppu_lbel_mq', 'ppu_lbel_tc', 'ppu_lbel_t
 data6 = data[data6]
 
 
-# In[5]:
+# In[13]:
 
 
 sumdata1 = data1.sum(axis=1)
@@ -155,7 +158,7 @@ DATA = DataPerfil[(['codpais', 'aniocampanaexposicion', 'aniocampanaproceso', 'c
 df_data = sqlContext.createDataFrame(DATA)
 
 
-# In[6]:
+# In[14]:
 
 
 #create output column features to pass parameter into th DF to kmeans
@@ -170,13 +173,13 @@ transformed = model.transform(new_df)
 #transformed.select("codpais", "codebelista", "pup_lbel", "pup_cyzone", "pup_cp", "ppu_fg", "prediction").show()
 
 
-# In[7]:
+# In[15]:
 
 
 df_perfil_final = transformed.selectExpr("codpais", "aniocampanaexposicion", "aniocampanaproceso", "codebelista" ,                                         "pup_lbel as pc_lb_pup", "pup_esika as pc_ek_pup",                                          "pup_cyzone as pc_cz_pup", "pup_cp as pc_cp_pup", "pup_fg as pc_fg_pup",                                          "pup_mq as pc_mq_pup", "pup_tc as pc_tc_pup", "pup_tf as pc_tf_pup",                                          "ppu_lbel as lb_ppu", "ppu_esika as ek_ppu", "ppu_cyzone as cz_ppu",                                          "ppu_cp as cp_ppu", "ppu_fg as fg_ppu", "ppu_mq as mq_ppu", "ppu_tc as tc_ppu",                                          "ppu_tf as tf_ppu", "prediction as perfil")
 
 
-# In[8]:
+# In[16]:
 
 
 df_perfil_final.repartition("codpais", "aniocampanaproceso").write              .partitionBy("codpais", "aniocampanaproceso").mode("Append")              .parquet("s3://hdata-belcorp/modelo-analitico-parquet/perfiles-output")
